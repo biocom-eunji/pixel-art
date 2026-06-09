@@ -76,11 +76,13 @@ export default function InAppPreview() {
   const bh = composed.height * dispScale;
 
   // 최초 진입 시 기본 배경(Frame.png — 캐릭터 카드) 자동 로드
+  // base(예: /pixel-art/)를 붙여 dev/배포 양쪽에서 정상 로드되게 한다.
   useEffect(() => {
     if (!app.bgImg) {
-      loadImage('/frame-default.png')
+      const defaultBg = `${import.meta.env.BASE_URL}frame-default.png`;
+      loadImage(defaultBg)
         .then((img) => {
-          app.setBg(img, '/frame-default.png');
+          app.setBg(img, defaultBg);
           app.setPlaced(false);
         })
         .catch(() => undefined);
