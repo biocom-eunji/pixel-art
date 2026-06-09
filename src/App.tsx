@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import AssetPalette from './components/AssetPalette';
 import CanvasEditor from './components/CanvasEditor';
 import InAppPreview from './components/InAppPreview';
@@ -29,6 +29,26 @@ export default function App() {
   const futureLen = useHistory((h) => h.future.length);
   const fileRef = useRef<HTMLInputElement>(null);
   const clipboard = useRef<Asset | null>(null);
+
+  // 패널 크기(드래그로 조절). 좌측 컬럼 너비 / 우측 패널 너비 / 에셋 섹션 높이
+  const mainRef = useRef<HTMLDivElement>(null);
+  const [leftW, setLeftW] = useState(() =>
+    Math.max(360, Math.round((window.innerWidth - 300) / 2))
+  );
+  const [rightW, setRightW] = useState(300);
+  const [bottomH, setBottomH] = useState(200);
+
+  const onDragLeft = (d: number) => {
+    const total = mainRef.current?.clientWidth ?? window.innerWidth;
+    setLeftW((w) => clamp(w + d, 280, total - rightW - 320));
+  };
+  const onDragRight = (d: number) => {
+    const total = mainRef.current?.clientWidth ?? window.innerWidth;
+    setRightW((w) => clamp(w - d, 200, total - leftW - 320));
+  };
+  const onDragBottom = (d: number) => {
+    setBottomH((h) => clamp(h - d, 100, window.innerHeight - 220));
+  };
 
   // 직접 그린 빌트인 꼬리 이미지를 imageStore 에 로드(예약 id)
   useEffect(() => {
@@ -190,9 +210,9 @@ export default function App() {
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_1fr_300px]">
+      <div ref={mainRef} className="flex min-h-0 flex-1">
         {/* 좌측 컬럼 = 편집 캔버스(위, 크게) + 에셋 팔레트·레이어(아래) */}
-        <section className="flex min-h-0 flex-col border-r border-line">
+        <section className="flex min-h-0 shrink-0 flex-col" style={{ width: leftW }}>
           <div className="flex items-center justify-between border-b border-line bg-panel px-3 py-2">
             <span className="text-xs font-semibold text-gray-300">편집 캔버스</span>
             <span className="text-[10px] text-gray-500">가이드 드래그 · 에셋 배치 · 줌/팬</span>
@@ -200,7 +220,9 @@ export default function App() {
           <div className="min-h-0 flex-1">
             <CanvasEditor />
           </div>
-          <div className="flex h-[200px] shrink-0 border-t border-line bg-panel">
+          {/* 가로 핸들: 편집 캔버스 ↔ 에셋 섹션 높이 조절 */}
+          <Resizer dir="row" onDrag={onDragBottom} />
+          <div className="flex shrink-0 bg-panel" style={{ height: bottomH }}>
             <div className="min-w-0 flex-1">
               <AssetPalette />
             </div>
@@ -210,17 +232,54 @@ export default function App() {
           </div>
         </section>
 
-        {/* 중앙 = 인앱 미리보기 */}
-        <section className="min-h-0 border-r border-line">
+        {/* 세로 핸들: 좌측 컬럼 ↔ 중앙 미리보기 너비 조절 */}
+        <Resizer dir="col" onDrag={onDragLeft} />
+
+        {/* 중앙 = 인앱 미리보기(배경 업로드 및 미리보기) */}
+        <section className="min-h-0 min-w-0 flex-1">
           <InAppPreview />
         </section>
 
+        {/* 세로 핸들: 중앙 미리보기 ↔ 우측 속성 패널 너비 조절 */}
+        <Resizer dir="col" onDrag={onDragRight} />
+
         {/* 우측 = 프레임 옵션 + 슬라이스 수치 + 내보내기 */}
-        <aside className="min-h-0 bg-panel">
+        <aside className="min-h-0 shrink-0 bg-panel" style={{ width: rightW }}>
           <PropertiesPanel />
         </aside>
       </div>
     </div>
+  );
+}
+
+function clamp(v: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+/** 드래그로 인접 패널 크기를 조절하는 핸들. dir='col'=세로 경계(좌우), 'row'=가로 경계(상하) */
+function Resizer({ dir, onDrag }: { dir: 'col' | 'row'; onDrag: (deltaPx: number) => void }) {
+  const last = useRef(0);
+  return (
+    <div
+      onPointerDown={(e) => {
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        last.current = dir === 'col' ? e.clientX : e.clientY;
+      }}
+      onPointerMove={(e) => {
+        if (!(e.buttons & 1)) return; // 마우스 버튼을 누른 채일 때만
+        const cur = dir === 'col' ? e.clientX : e.clientY;
+        const delta = cur - last.current;
+        if (delta !== 0) {
+          last.current = cur;
+          onDrag(delta);
+        }
+      }}
+      className={
+        dir === 'col'
+          ? 'w-1.5 shrink-0 cursor-col-resize touch-none select-none bg-line hover:bg-accent'
+          : 'h-1.5 shrink-0 cursor-row-resize touch-none select-none bg-line hover:bg-accent'
+      }
+    />
   );
 }
 
