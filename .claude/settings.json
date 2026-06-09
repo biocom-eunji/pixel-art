@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5199/)",
+      "Bash(pkill -f \"vite --port 5199\")",
+      "Bash(ls -la asset/)",
+      "Bash(ls -la assets/)",
+      "Bash(find . -name \"*.svg\" -not -path \"./node_modules/*\")",
+      "Bash(ls -la *.png)",
+      "Bash(find . -maxdepth 2 -iname \"홈*.png\" -not -path \"./node_modules/*\")",
+      "Bash(sips -g pixelWidth -g pixelHeight 홈.png)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:5199/)",
+      "Bash(echo \"index: $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost:5199/\\)\")",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:5199/home-default.png)",
+      "Bash(echo \"home-default.png: $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost:5199/home-default.png\\)\")",
+      "Bash(sips -g pixelWidth -g pixelHeight Frame.png)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' http://localhost:5199/frame-default.png)",
+      "Bash(echo \"frame-default.png: $\\(curl -s -o /dev/null -w '%{http_code}' http://localhost:5199/frame-default.png\\)\")",
+      "Bash(cd \"/Users/eunji/Desktop/pixel art\" && mkdir -p src/assets/builtin && cp asset/asset-*.svg src/assets/builtin/ && echo \"복사된 개수: $\\(ls src/assets/builtin/*.svg | wc -l | tr -d ' '\\)\" && ls src/assets/builtin/ | head -3 && ls src/assets/builtin/ | tail -1)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:5199/src/assets/builtin/asset-01.svg?raw')",
+      "Bash(echo \"asset-01 dev module: $\\(curl -s -o /dev/null -w '%{http_code}' 'http://localhost:5199/src/assets/builtin/asset-01.svg?raw'\\)\")",
+      "Bash(python3 -)",
+      "Bash(rm -f src/assets/builtin/*.svg)",
+      "Bash(cp asset/asset-*.svg src/assets/builtin/)",
+      "Bash(node -e ' *)"
+    ],
+    "additionalDirectories": [
+      "/Users/eunji/Desktop/pixel art/asset"
+    ]
+  }
+}
