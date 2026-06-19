@@ -1,5 +1,5 @@
 import type { Asset, EditorState, LineStyle, Waveform } from '../types';
-import { BUILTIN_TAIL_ID } from './builtinTail';
+import { BUILTIN_TAIL_ID, getTailGrid } from './builtinTail';
 import { renderDecoCanvas } from './deco';
 
 export interface FrameModel {
@@ -363,36 +363,28 @@ export function renderTailDesign(
 
   const id = state.tail.assetId;
   const a = id ? state.assets.find((x) => x.id === id) : undefined;
-  // 빌트인(직접 그린) 꼬리는 assets 목록엔 없고 images 맵에 예약 id로 들어있음
-  const img = id ? (a ? images.get(a.id) : images.get(id)) : undefined;
+  const img = a ? images.get(a.id) : undefined;
   const isBuiltinTail = id === BUILTIN_TAIL_ID;
 
-  if (img && img.complete && isBuiltinTail) {
-    // 직접 그린 2색 템플릿(흰=채움 / 검정=외곽선)을 말풍선 색으로 재색 → 본체와 연결
-    const stroke = hexToRgba(state.strokeColor);
-    const fill = hexToRgba(state.fillColor);
-    const nw = img.naturalWidth || w;
-    const nh = img.naturalHeight || h;
+  if (isBuiltinTail) {
+    // 직접 그린 2색 템플릿(흰=채움 / 검정=외곽선)을 말풍선 색으로 재색 → 본체와 연결.
+    // SVG rect 파싱 그리드를 동기 렌더(이미지 로드/네트워크 의존 없음).
+    const grid = getTailGrid();
     const nat = document.createElement('canvas');
-    nat.width = nw;
-    nat.height = nh;
+    nat.width = grid.w;
+    nat.height = grid.h;
     const nctx = nat.getContext('2d')!;
     nctx.imageSmoothingEnabled = false;
-    nctx.drawImage(img, 0, 0);
-    const idata = nctx.getImageData(0, 0, nw, nh);
-    const d = idata.data;
-    for (let i = 0; i < d.length; i += 4) {
-      if (d[i + 3] < 10) continue; // 투명 유지
-      const lum = (d[i] + d[i + 1] + d[i + 2]) / 3;
-      const c = lum < 128 ? stroke : fill; // 어두우면 선, 밝으면 채움
-      d[i] = c[0];
-      d[i + 1] = c[1];
-      d[i + 2] = c[2];
-      d[i + 3] = 255;
+    for (let gy = 0; gy < grid.h; gy++) {
+      for (let gx = 0; gx < grid.w; gx++) {
+        const v = grid.data[gy * grid.w + gx];
+        if (!v) continue;
+        nctx.fillStyle = v === 2 ? state.strokeColor : state.fillColor;
+        nctx.fillRect(gx, gy, 1, 1);
+      }
     }
-    nctx.putImageData(idata, 0, 0);
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(nat, 0, 0, nw, nh, 0, 0, w, h); // 정수 nearest
+    ctx.drawImage(nat, 0, 0, grid.w, grid.h, 0, 0, w, h); // 정수 nearest 스케일
   } else if (a && img && img.complete) {
     // 업로드한 일반 에셋 꼬리: 원본 색 그대로
     ctx.save();

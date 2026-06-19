@@ -8,7 +8,6 @@ import { useEditor } from './store/editorStore';
 import { useImages } from './store/imageStore';
 import { useHistory } from './store/historyStore';
 import { loadImage, svgToUrl } from './lib/svg';
-import { BUILTIN_TAIL_ID, loadBuiltinTail } from './lib/builtinTail';
 import type { Asset } from './types';
 import {
   duplicateAsVariation,
@@ -50,12 +49,6 @@ export default function App() {
     setBottomH((h) => clamp(h - d, 100, window.innerHeight - 220));
   };
 
-  // 직접 그린 빌트인 꼬리 이미지를 imageStore 에 로드(예약 id)
-  useEffect(() => {
-    loadBuiltinTail()
-      .then((img) => useImages.getState().setImage(BUILTIN_TAIL_ID, img))
-      .catch(() => undefined);
-  }, []);
 
   // 선택 에셋을 약간 오프셋해 붙여넣기(복제) + 선택
   const pasteAsset = (src: Asset) => {
